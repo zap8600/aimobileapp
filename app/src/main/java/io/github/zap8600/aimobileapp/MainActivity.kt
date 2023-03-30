@@ -3,31 +3,25 @@ package io.github.zap8600.aimobileapp
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.JsonReader
+import android.widget.Button
+import android.widget.EditText
 import io.github.zap8600.aimobileapp.tokenization.GPT2Tokenizer
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import org.tensorflow.lite.Interpreter
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tokenizer: GPT2Tokenizer
-
+    private lateinit var tflite: Interpreter
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        //Initialize input field
-        val userPrompt = findViewById<android.widget.EditText>(R.id.userPrompt)
-        val generate = findViewById<android.widget.Button>(R.id.generate)
+        val userPrompt = findViewById<EditText>(R.id.userPrompt)
+        val generate = findViewById<Button>(R.id.generate)
 
         //Initialize tokenizer
         tokenizer = loadTokenizer()
-
-        //Add listener to generate button
-        generate.setOnClickListener {
-            val prompt = userPrompt.text.toString()
-            val tokenizedPrompt = tokenizer.encode(prompt)
-            //Set input field to tokenized prompt
-            userPrompt.setText(tokenizedPrompt.toString())
-        }
     }
 
     private fun loadTokenizer(): GPT2Tokenizer {
