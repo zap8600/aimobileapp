@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="app_name">AI Mobile</string>
     <string name="enter_a_prompt">Enter a prompt...</string>
+    <string name="generate">Generate</string>
+    <string name="hello_world">Hello World!</string>
 </resources>
