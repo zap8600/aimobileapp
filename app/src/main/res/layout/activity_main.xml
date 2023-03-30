@@ -28,7 +28,6 @@
          android:id="@+id/generate"
          android:text="@string/generate" />
      
-     //TextView that is constrained to the start of parent and bottom of the generate button. Has text saying "Hello World!"
      <TextView
            android:layout_height="wrap_content"
            android:layout_width="wrap_content"
