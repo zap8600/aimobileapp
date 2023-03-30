@@ -52,6 +52,6 @@ dependencies {
     
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:latest-release'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:latest-release'
-    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:latest-release'
-    implementation 'androidx.activity:activity-ktx:latest-release'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
+    implementation 'androidx.activity:activity-ktx:1.7.0'
 }
