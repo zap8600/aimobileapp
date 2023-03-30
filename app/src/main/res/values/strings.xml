@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">AI Mobile</string>
+    <string name="enter_a_prompt">Enter a prompt...</string>
+    <string name="generate">Generate</string>
+</resources>
