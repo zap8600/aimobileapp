@@ -12,7 +12,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import io.github.zap8600.aimobileapp.R
-import io.github.zap8600.aimobileapp.tokenization.GPT2Tokenizer.GPT2Tokenizer
+import io.github.zap8600.aimobileapp.tokenization.CodegenTokenizer.CodegenTokenizer
 import kotlinx.coroutines.*
 import org.tensorflow.lite.Interpreter
 import java.io.BufferedReader
@@ -26,20 +26,20 @@ private const val SEQUENCE_LENGTH  = 64
 private const val VOCAB_SIZE       = 50257
 private const val NUM_HEAD         = 12
 private const val NUM_LITE_THREADS = 4
-private const val MODEL_PATH       = "gpt2.tflite"
-private const val VOCAB_PATH       = "gpt2-vocab.json"
-private const val MERGES_PATH      = "gpt2-merges.txt"
-private const val TAG              = "GPT2Client"
+private const val MODEL_PATH       = "codegen.tflite"
+private const val VOCAB_PATH       = "codegen-vocab.json"
+private const val MERGES_PATH      = "codegen-merges.txt"
+private const val TAG              = "CodegenClient"
 
 private typealias Predictions = Array<Array<FloatArray>>
 
-enum class GPT2StrategyEnum { GREEDY, TOPK }
-data class GPT2Strategy(val strategy: GPT2StrategyEnum, val value: Int = 0)
+enum class CodegenStrategyEnum { GREEDY, TOPK }
+data class CodegenStrategy(val strategy: CodegenStrategyEnum, val value: Int = 0)
 
-class GPT2Client(application: Application) : AndroidViewModel(application) {
+class CodegenClient(application: Application) : AndroidViewModel(application) {
     private val initJob: Job
     private var generateJob: Job? = null
-    private lateinit var tokenizer: GPT2Tokenizer
+    private lateinit var tokenizer: CodegenTokenizer
     private lateinit var tflite: Interpreter
 
     private val _prompt = MutableLiveData("Your prompt will go here and text will be generated with it, once you hit \"Generate\" after entering your prompt.")
@@ -48,7 +48,7 @@ class GPT2Client(application: Application) : AndroidViewModel(application) {
     private val _completion = MutableLiveData("")
     val completion: LiveData<String> = _completion
 
-    private var strategy = GPT2Strategy(GPT2StrategyEnum.TOPK, 40)
+    private var strategy = CodegenStrategy(CodegenStrategyEnum.TOPK, 40)
 
     init {
         initJob = viewModelScope.launch {
@@ -56,7 +56,7 @@ class GPT2Client(application: Application) : AndroidViewModel(application) {
             val decoder  = encoder.entries.associateBy({ it.value }, { it.key })
             val bpeRanks = loadBpeRanks()
 
-            tokenizer = GPT2Tokenizer(encoder, decoder, bpeRanks)
+            tokenizer = CodegenTokenizer(encoder, decoder, bpeRanks)
             tflite    = loadModel()
         }
     }
@@ -90,7 +90,7 @@ class GPT2Client(application: Application) : AndroidViewModel(application) {
             val outputLogits = predictions[0][maxTokens.size-1]
 
             val nextToken: Int = when (strategy.strategy) {
-                GPT2StrategyEnum.TOPK -> {
+                CodegenStrategyEnum.TOPK -> {
                     val filteredLogitsWithIndexes = outputLogits
                             .mapIndexed { index, fl -> (index to fl) }
                             .sortedByDescending { it.second }

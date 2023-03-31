@@ -1,4 +1,4 @@
-package io.github.zap8600.aimobileapp.tokenization
+package io.github.zap8600.aimobileapp.tokenization.GPT2Tokenizer
 
 internal val byteEncoder: Map<Int, String> by lazy {
     hashMapOf<Int, String>().apply {
