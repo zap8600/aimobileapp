@@ -7,7 +7,10 @@ import android.util.JsonReader
 import android.widget.TextView
 import androidx.core.content.res.ResourcesCompat
 import androidx.databinding.BindingAdapter
-import androidx.lifecycle.*
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
 import io.github.zap8600.aimobileapp.R
 import io.github.zap8600.aimobileapp.tokenization.GPT2Tokenizer
 import kotlinx.coroutines.*
@@ -39,7 +42,7 @@ class GPT2Client(application: Application) : AndroidViewModel(application) {
     private lateinit var tokenizer: GPT2Tokenizer
     private lateinit var tflite: Interpreter
 
-    private val _prompt = MutableLiveData("A compound sentence is")
+    private val _prompt = MutableLiveData("Your prompt will go here and text will be generated with it, once you hit \"Generate\" after entering your prompt.")
     val prompt: LiveData<String> = _prompt
 
     private val _completion = MutableLiveData("")
@@ -63,11 +66,12 @@ class GPT2Client(application: Application) : AndroidViewModel(application) {
         tflite.close()
     }
 
-    fun launchGeneration() {
+    fun launchGeneration(text: String) {
         generateJob = viewModelScope.launch {
             initJob.join()
             generateJob?.cancelAndJoin()
             _completion.value = ""
+            _prompt.value = text
             generate(_prompt.value!!)
         }
     }

@@ -34,7 +34,7 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="148dp"
             android:text="@string/generate"
-            android:onClick="@{() -> vm.launchGeneration()}"
+            android:onClick="@{() -> vm.launchGeneration(userPrompt.getText().toString())}"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/userPrompt" />
 
