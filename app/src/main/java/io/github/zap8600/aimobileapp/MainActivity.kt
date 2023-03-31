@@ -16,8 +16,8 @@ class MainActivity : AppCompatActivity() {
         val binding: ActivityMainBinding
                 = DataBindingUtil.setContentView(this, R.layout.activity_main)
         
-        // binding.vm = gpt2
-        binding.vm = codegen
+        binding.vm = gpt2
+        // binding.vm = codegen
 
         binding.lifecycleOwner = this
     }
