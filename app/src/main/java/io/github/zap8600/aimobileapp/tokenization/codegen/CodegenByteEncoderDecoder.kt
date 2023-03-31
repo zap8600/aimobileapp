@@ -1,4 +1,4 @@
-package io.github.zap8600.aimobileapp.tokenization.CodegenTokenizer
+package io.github.zap8600.aimobileapp.tokenization.codegen
 
 internal val byteEncoder: Map<Int, String> by lazy {
     hashMapOf<Int, String>().apply {

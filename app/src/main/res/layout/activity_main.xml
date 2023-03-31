@@ -8,7 +8,7 @@
     <data>
         <variable
             name="vm"
-            type="io.github.zap8600.aimobileapp.ml.GPT2Client"/>
+            type="io.github.zap8600.aimobileapp.ml.gpt2.GPT2Client"/>
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -16,37 +16,7 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity">
 
-        <EditText
-            android:id="@+id/userPrompt"
-            android:layout_width="411dp"
-            android:layout_height="385dp"
-            android:ems="10"
-            android:gravity="start|top"
-            android:hint="@string/enter_a_prompt"
-            android:importantForAutofill="no"
-            android:inputType="textMultiLine"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
 
-        <Button
-            android:id="@+id/generate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="148dp"
-            android:text="@string/generate"
-            android:onClick="@{() -> vm.launchGeneration(userPrompt.getText().toString())}"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/userPrompt" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="4dp"
-            app:completion="@{vm.completion}"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/generate"
-            app:prompt="@{vm.prompt}" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

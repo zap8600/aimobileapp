@@ -1,6 +1,6 @@
-package io.github.zap8600.aimobileapp.tokenization.CodegenTokenizer
+package io.github.zap8600.aimobileapp.tokenization.codegen
 
-class GPT2Tokenizer(
+class CodegenTokenizer(
     private val encoder: Map<String, Int>,
     private val decoder: Map<Int, String>,
     private val bpeRanks: Map<Pair<String, String>, Int>) {

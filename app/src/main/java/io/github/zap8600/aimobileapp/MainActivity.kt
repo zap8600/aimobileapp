@@ -7,8 +7,8 @@ import androidx.databinding.DataBindingUtil
 import io.github.zap8600.aimobileapp.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
-    private val gpt2: io.github.zap8600.aimobileapp.ml.GPT2Client by viewModels()
-    private val codegen: io.github.zap8600.aimobileapp.ml.CodegenClient by viewModels()
+    private val gpt2: io.github.zap8600.aimobileapp.ml.gpt2.GPT2Client by viewModels()
+    // private val codegen: io.github.zap8600.aimobileapp.ml.codegen.CodegenClient by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

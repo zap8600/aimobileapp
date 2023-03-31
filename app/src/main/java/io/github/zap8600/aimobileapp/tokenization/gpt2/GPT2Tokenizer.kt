@@ -1,4 +1,4 @@
-package io.github.zap8600.aimobileapp.tokenization.GPT2Tokenizer
+package io.github.zap8600.aimobileapp.tokenization.gpt2
 
 class GPT2Tokenizer(
     private val encoder: Map<String, Int>,
