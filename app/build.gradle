@@ -48,10 +48,13 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
 
-    implementation 'org.tensorflow:tensorflow-lite:2.6.0'
+    implementation 'org.tensorflow:tensorflow-lite:2.11.0'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.11.0'
     
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:latest-release'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:latest-release'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.1'
     implementation 'androidx.activity:activity-ktx:1.7.0'
+
+    implementation 'com.google.guava:guava:30.1.1-android'
 }
