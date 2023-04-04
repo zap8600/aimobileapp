@@ -175,7 +175,7 @@ class Client(application: Application) : AndroidViewModel(application) {
         yield()
     }
 
-    private suspend fun getBestAnswers(
+    private fun getBestAnswers(
         startLogits: FloatArray, endLogits: FloatArray, feature: Feature
     ): List<QaAnswer>? {
         // Model uses the closed interval [start, end] for indices.
@@ -215,7 +215,7 @@ class Client(application: Application) : AndroidViewModel(application) {
         return answers
     }
 
-    private suspend fun getBestIndex(logits: FloatArray, tokenToOrigMap: Map<Int, Int>): IntArray {
+    private fun getBestIndex(logits: FloatArray, tokenToOrigMap: Map<Int, Int>): IntArray {
         val tmpList: MutableList<QaAnswer.Pos> = ArrayList()
         for (i in 0 until BERTSEQUENCE_LENGTH) {
             if (tokenToOrigMap.containsKey(i + BERTOUTPUT_OFFSET)) {
