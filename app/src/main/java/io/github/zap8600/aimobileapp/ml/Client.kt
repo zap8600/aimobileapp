@@ -14,6 +14,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.common.base.Joiner
 import io.github.zap8600.aimobileapp.R
 import io.github.zap8600.aimobileapp.tokenization.GPT2Tokenizer
+import io.github.zap8600.aimobileapp.tokenization.BertTokenizer
 import kotlinx.coroutines.*
 import org.tensorflow.lite.Interpreter
 import java.io.BufferedReader
@@ -38,7 +39,7 @@ private const val BERTOUTPUT_OFFSET = 1
 private const val BERTDO_LOWER_CASE = true
 private const val BERTMAX_QUERY_LEN = 64
 private const val BERTMODEL       = "distilbert.tflite"
-private const val BERTDICT       = "bert-vocab.txt"
+private const val BERTDICT       = "bert-vocab.json"
 
 private const val TAG              = "Client"
 
@@ -54,7 +55,7 @@ class Client(application: Application) : AndroidViewModel(application) {
     private var generateJob: Job? = null
     private lateinit var gpt2Tokenizer: GPT2Tokenizer
     private lateinit var model: Interpreter
-    private lateinit var featureConverter: FeatureConverter
+    private lateinit var bertTokenizer: BertTokenizer
 
     private val _prompt = MutableLiveData("Your prompt will go here and text will be generated with it, once you hit \"Generate\" after entering your prompt.")
     val prompt: LiveData<String> = _prompt
@@ -74,7 +75,7 @@ class Client(application: Application) : AndroidViewModel(application) {
 
             gpt2Tokenizer = GPT2Tokenizer(gpt2Encoder, gpt2Decoder, gpt2BpeRanks)
 
-            featureConverter = FeatureConverter(loadDictionary(BERTDICT), BERTDO_LOWER_CASE, BERTMAX_QUERY_LEN, BERTSEQUENCE_LENGTH)
+            bertTokenizer = BertTokenizer(loadDictionary(BERTDICT))
         }
     }
 
@@ -142,111 +143,13 @@ class Client(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun generateBERT(query: String, content: String) = withContext(Dispatchers.Default) {
-        val feature: Feature = featureConverter.convert(query, content)
-        val inputIds = Array(1) {
-            IntArray(BERTSEQUENCE_LENGTH)
-        }
-        val startLogits = Array(1) {
-            FloatArray(BERTSEQUENCE_LENGTH)
-        }
-        val endLogits = Array(1) {
-            FloatArray(BERTSEQUENCE_LENGTH)
-        }
+        val tokenizedText = bertTokenizer.encode(query)
+        val bertVocab = loadEncoder(BERTDICT)
 
-        for (j in 0 until BERTSEQUENCE_LENGTH) {
-            inputIds[0][j] = feature.inputIds[j]
-        }
-
-        val output: MutableMap<Int, Any> = HashMap()
-        output[0] = startLogits
-        output[1] = endLogits
-
-        model.runForMultipleInputsOutputs(arrayOf<Any>(inputIds), output)
-
-        val answers = getBestAnswers(startLogits[0], endLogits[0], feature)
-
-        if (answers != null) {
-            if(answers.isNotEmpty()) {
-                val topAnswer = answers[0]
-                _completion.postValue(_completion.value + topAnswer.text)
-            }
-        }
-
+        _completion.postValue(bertVocab.toString())
         yield()
     }
 
-    private fun getBestAnswers(
-        startLogits: FloatArray, endLogits: FloatArray, feature: Feature
-    ): List<QaAnswer>? {
-        // Model uses the closed interval [start, end] for indices.
-        val startIndexes: IntArray = getBestIndex(startLogits, feature.tokenToOrigMap)
-        val endIndexes: IntArray = getBestIndex(endLogits, feature.tokenToOrigMap)
-        val origResults: MutableList<QaAnswer.Pos> = ArrayList()
-        for (start in startIndexes) {
-            for (end in endIndexes) {
-                if (end < start) {
-                    continue
-                }
-                val length = end - start + 1
-                if (length > BERTANSWER_LENGTH) {
-                    continue
-                }
-                origResults.add(QaAnswer.Pos(start, end, startLogits[start] + endLogits[end]))
-            }
-        }
-        origResults.sort()
-        val answers: MutableList<QaAnswer> = ArrayList()
-        for (i in origResults.indices) {
-            if (i >= BERTPREDICT_ANS_NUM) {
-                break
-            }
-            var convertedText: String = if (origResults[i].start > 0) ({
-                convertBack(
-                    feature,
-                    origResults[i].start,
-                    origResults[i].end
-                )
-            }).toString() else {
-                ""
-            }
-            val ans = QaAnswer(convertedText, origResults[i])
-            answers.add(ans)
-        }
-        return answers
-    }
-
-    private fun getBestIndex(logits: FloatArray, tokenToOrigMap: Map<Int, Int>): IntArray {
-        val tmpList: MutableList<QaAnswer.Pos> = ArrayList()
-        for (i in 0 until BERTSEQUENCE_LENGTH) {
-            if (tokenToOrigMap.containsKey(i + BERTOUTPUT_OFFSET)) {
-                tmpList.add(QaAnswer.Pos(i, i, logits[i]))
-            }
-        }
-        tmpList.sort()
-        val indexes =
-            IntArray(BERTPREDICT_ANS_NUM)
-        for (i in 0 until BERTPREDICT_ANS_NUM) {
-            indexes[i] = tmpList[i].start
-        }
-        return indexes
-    }
-
-    private fun convertBack(feature: Feature, start: Int, end: Int): String? {
-        // Shifted index is: index of logits + offset.
-        val shiftedStart: Int =
-            start + BERTOUTPUT_OFFSET
-        val shiftedEnd: Int =
-            end + BERTOUTPUT_OFFSET
-        val startIndex = feature.tokenToOrigMap[shiftedStart]!!
-        val endIndex = feature.tokenToOrigMap[shiftedEnd]!!
-        // end + 1 for the closed interval.
-        return BERTSPACE_JOINER.join(
-            feature.origTokens.subList(
-                startIndex,
-                endIndex + 1
-            )
-        )
-    }
     private suspend fun loadModel(file: String): Interpreter = withContext(Dispatchers.IO) {
         val assetFileDescriptor = getApplication<Application>().assets.openFd(file)
         assetFileDescriptor.use {
@@ -290,17 +193,15 @@ class Client(application: Application) : AndroidViewModel(application) {
             }
         }
     }
-
+    //loadDictionary function. Loads BERT's vocab.txt from the file. Turns it into a Map<String, Int>. [PAD] is 0, [unused1] through [unused99] are 1 through 99, [UNK] is 100, [CLS] is 101, [SEP] is 102, [MASK] is 103, [unused100] and [unused101] are 104 and 105, and the rest are 106 through 30521. The file is not a .json file, so it is read as a .txt file.
     private suspend fun loadDictionary(file: String): Map<String, Int> = withContext(Dispatchers.IO) {
         hashMapOf<String, Int>().apply {
-            val dictStream = getApplication<Application>().assets.open(file)
-            dictStream.use { stream ->
-                val dictReader = BufferedReader(InputStreamReader(stream))
-                dictReader.useLines { seq ->
-                    seq.drop(1).forEachIndexed { i, s ->
-                        val list = s.split(" ")
-                        val keyTuple = list[0]
-                        put(keyTuple, i)
+            val vocabStream = getApplication<Application>().assets.open(file)
+            vocabStream.use {
+                val vocabReader = BufferedReader(InputStreamReader(it))
+                vocabReader.useLines { seq ->
+                    seq.forEachIndexed { i, s ->
+                        put(s, i)
                     }
                 }
             }
