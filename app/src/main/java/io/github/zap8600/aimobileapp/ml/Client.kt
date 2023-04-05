@@ -177,7 +177,7 @@ class Client(application: Application) : AndroidViewModel(application) {
             }
 
             tokens.add(nextToken)
-            val decodedToken = gpt2Tokenizer.decode(listOf(nextToken))
+            val decodedToken = bertTokenizer.decode(listOf(nextToken))
             _completion.postValue(_completion.value + decodedToken)
 
             yield()

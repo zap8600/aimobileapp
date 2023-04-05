@@ -40,4 +40,10 @@ class BertTokenizer(private val vocab: Map<String, Int>) {
         }
         return encoded
     }
+    
+    fun decode(tokens: List<Int>): String {
+        val idToToken = vocab.entries.associateBy({ it.value }) { it.key }
+        val decodedTokens = tokens.map { idToToken[it] ?: "[UNK]" }
+        return decodedTokens.joinToString(" ")
+    }
 }
