@@ -25,7 +25,7 @@ import kotlin.math.exp
 import kotlin.random.Random
 
 private const val GPT2SEQUENCE_LENGTH  = 64
-private const val VOCAB_SIZE       = 50257
+private const val GPT2VOCAB_SIZE       = 50257
 private const val NUM_HEAD         = 12
 private const val NUM_LITE_THREADS = 4
 private const val GPT2MODEL       = "gpt2.tflite"
@@ -33,6 +33,7 @@ private const val GPT2VOCAB       = "gpt2-vocab.json"
 private const val GPT2MERGES      = "gpt2-merges.txt"
 
 private const val BERTSEQUENCE_LENGTH  = 384
+private const val BERTVOCAB_SIZE = 30522
 private const val BERTANSWER_LENGTH = 32
 private const val BERTPREDICT_ANS_NUM = 5
 private const val BERTOUTPUT_OFFSET = 1
@@ -96,7 +97,7 @@ class Client(application: Application) : AndroidViewModel(application) {
             }
             else if(usrModel == "DistilBERT"){
                 model = loadModel(BERTMODEL)
-                generateBERT(_prompt.value!!, "Extractive Question Answering is the task of extracting an answer from a text given a question. An example of an question answering dataset is the SQuAD dataset, which is entirely based on that task. If you would like to fine-tune a model on a SQuAD task, you may leverage the examples/pytorch/question-answering/run_squad.py script.")
+                generateBERT(_prompt.value!!, "Jim Henson was a good puppet.")
             }
         }
     }
@@ -108,7 +109,7 @@ class Client(application: Application) : AndroidViewModel(application) {
             val paddedTokens = maxTokens + IntArray(GPT2SEQUENCE_LENGTH - maxTokens.size)
             val inputIds     = Array(1) { paddedTokens }
 
-            val predictions: Predictions = Array(1) { Array(GPT2SEQUENCE_LENGTH) { FloatArray(VOCAB_SIZE) } }
+            val predictions: Predictions = Array(1) { Array(GPT2SEQUENCE_LENGTH) { FloatArray(GPT2VOCAB_SIZE) } }
             val outputs = mutableMapOf<Int, Any>(0 to predictions)
 
             model.runForMultipleInputsOutputs(arrayOf(inputIds), outputs)
@@ -142,14 +143,45 @@ class Client(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private suspend fun generateBERT(query: String, content: String) = withContext(Dispatchers.Default) {
-        val tokenizedText = bertTokenizer.encode(query)
-        val bertVocab = loadEncoder(BERTDICT)
-        val normalizedText = bertTokenizer.normalize(query)
-        val pretokenizedText = bertTokenizer.pretokenize(normalizedText)
+    private suspend fun generateBERT(query: String, content: String, nbTokens: Int = 100) = withContext(Dispatchers.Default) {
+        val tokens = bertTokenizer.encode(query, content)
+        repeat (nbTokens) {
+            val maxTokens    = tokens.takeLast(BERTSEQUENCE_LENGTH).toIntArray()
+            val paddedTokens = maxTokens + IntArray(BERTSEQUENCE_LENGTH - maxTokens.size)
+            val inputIds     = Array(1) { paddedTokens }
 
-        _completion.postValue(tokenizedText.toString())
-        yield()
+            val predictions: Predictions = Array(1) { Array(BERTSEQUENCE_LENGTH) { FloatArray(BERTVOCAB_SIZE) } }
+            val outputs = mutableMapOf<Int, Any>(0 to predictions)
+            
+            model.runForMultipleInputsOutputs(arrayOf(inputIds), outputs)
+            val outputLogits = predictions[0][maxTokens.size-1]
+            
+            val nextToken: Int = when (strategy.strategy) {
+                StrategyEnum.TOPK -> {
+                    val filteredLogitsWithIndexes = outputLogits
+                            .mapIndexed { index, fl -> (index to fl) }
+                            .sortedByDescending { it.second }
+                            .take(strategy.value)
+
+                    // Softmax computation on filtered logits
+                    val filteredLogits = filteredLogitsWithIndexes.map { it.second }
+                    val maxLogitValue  = filteredLogits.max()
+                    val logitsExp      = filteredLogits.map { exp(it - maxLogitValue) }
+                    val sumExp         = logitsExp.sum()
+                    val probs          = logitsExp.map { it.div(sumExp) }
+
+                    val logitsIndexes = filteredLogitsWithIndexes.map { it.first }
+                    sample(logitsIndexes, probs)
+                }
+                else -> outputLogits.argmax()
+            }
+
+            tokens.add(nextToken)
+            val decodedToken = gpt2Tokenizer.decode(listOf(nextToken))
+            _completion.postValue(_completion.value + decodedToken)
+
+            yield()
+        }
     }
 
     private suspend fun loadModel(file: String): Interpreter = withContext(Dispatchers.IO) {

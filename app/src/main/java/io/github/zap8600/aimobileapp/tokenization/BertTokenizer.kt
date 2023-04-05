@@ -14,9 +14,11 @@ class BertTokenizer(private val vocab: Map<String, Int>) {
         return normalized.split(" ")
     }
     
-    fun pretokenize(tokens: List<String>): List<String> {
+    fun pretokenize(tokens: List<String>, first: Boolean = false): List<String> {
         val pretokenized = mutableListOf<String>()
-        pretokenized.add("[CLS]")
+        if(first) {
+            pretokenized.add("[CLS]")
+        }
         for (token in tokens) {
             val matches = "\\w+|[^\uAC00-\uD7A3\u3130-\u318F\\s]+".toRegex().findAll(token)
             for (match in matches) {
@@ -28,9 +30,14 @@ class BertTokenizer(private val vocab: Map<String, Int>) {
     }
 
     //encode function that encodes the text into a list of integers. It uses the normalize and pretokenize functions. For example, encoding "Who was Jim Henson?" will return [101, 2040, 2001, 3958, 27227, 1029, 102].
-    fun encode(text: String): List<Int> {
-        val normalized = normalize(text)
-        val pretokenized = pretokenize(normalized)
-        return pretokenized.map { vocab[it] ?: 100 }
+    fun encode(vararg texts: String): MutableList<Int> {
+        val encoded = mutableListOf<Int>()
+        for ((index, text) in texts.withIndex()) {
+            val normalized = normalize(text)
+            val pretokenized = pretokenize(normalized, index == 0)
+            val encodedText = pretokenized.map { vocab[it] ?: 100 }
+            encoded.addAll(encodedText)
+        }
+        return encoded
     }
 }
