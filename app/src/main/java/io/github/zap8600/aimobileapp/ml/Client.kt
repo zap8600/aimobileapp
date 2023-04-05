@@ -75,7 +75,7 @@ class Client(application: Application) : AndroidViewModel(application) {
 
             gpt2Tokenizer = GPT2Tokenizer(gpt2Encoder, gpt2Decoder, gpt2BpeRanks)
 
-            bertTokenizer = BertTokenizer(loadDictionary(BERTDICT))
+            bertTokenizer = BertTokenizer(loadEncoder(BERTDICT))
         }
     }
 
@@ -145,8 +145,10 @@ class Client(application: Application) : AndroidViewModel(application) {
     private suspend fun generateBERT(query: String, content: String) = withContext(Dispatchers.Default) {
         val tokenizedText = bertTokenizer.encode(query)
         val bertVocab = loadEncoder(BERTDICT)
+        val normalizedText = bertTokenizer.normalize(query)
+        val pretokenizedText = bertTokenizer.pretokenize(normalizedText)
 
-        _completion.postValue(bertVocab.toString())
+        _completion.postValue(tokenizedText.toString())
         yield()
     }
 
